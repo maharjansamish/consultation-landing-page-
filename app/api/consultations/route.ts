@@ -25,6 +25,37 @@ function cleanHeader(value: string) {
   return value.replace(/[\r\n]+/g, " ").trim().slice(0, 120);
 }
 
+async function sendResendEmail(apiKey: string, message: {
+  from: string;
+  to: string;
+  subject: string;
+  text: string;
+  replyTo?: string;
+  idempotencyKey: string;
+}) {
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+      "Idempotency-Key": message.idempotencyKey,
+    },
+    body: JSON.stringify({
+      from: message.from,
+      to: [message.to],
+      ...(message.replyTo ? { reply_to: message.replyTo } : {}),
+      subject: message.subject,
+      text: message.text,
+    }),
+    signal: AbortSignal.timeout(12_000),
+    cache: "no-store",
+  });
+
+  if (!response.ok) return false;
+  const result = (await response.json().catch(() => null)) as { id?: string } | null;
+  return typeof result?.id === "string" && result.id.length > 0;
+}
+
 export async function POST(request: Request) {
   const contentLength = Number(request.headers.get("content-length") ?? 0);
   if (contentLength > 16_384) return json({ error: "The submitted form is too large." }, 413);
@@ -61,8 +92,20 @@ export async function POST(request: Request) {
 
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return json({ error: "Please submit the form again." }, 400);
   const candidate = raw as Record<string, unknown>;
-  if (typeof candidate.websiteUrl === "string" && candidate.websiteUrl.trim()) {
+  if (candidate.websiteUrl !== undefined && (typeof candidate.websiteUrl !== "string" || candidate.websiteUrl.trim())) {
     return json({ error: "We could not verify this request." }, 400);
+  }
+
+  const submittedStringFields = ["fullName", "businessEmail", "company", "website", "whatsappNumber", "country", "service", "challenge", "contactMethod"] as const;
+  const malformedField = submittedStringFields.find((field) => candidate[field] !== undefined && typeof candidate[field] !== "string");
+  if (malformedField) {
+    return json({
+      error: "Please check the highlighted fields and try again.",
+      errors: { [malformedField]: "Enter a valid value." },
+    }, 422);
+  }
+  if (candidate.consent !== undefined && typeof candidate.consent !== "boolean") {
+    return json({ error: "Please confirm that I may contact you about this request.", errors: { consent: "Please confirm your consent." } }, 422);
   }
 
   const input: ConsultationInput = {
@@ -92,7 +135,9 @@ export async function POST(request: Request) {
     return json({ error: "The consultation form is not connected yet. Please check back later." }, 503);
   }
 
-  if (!isEmail(to) || !isEmail(from.match(/<([^>]+)>/)?.[1] ?? from)) {
+  const fromAddress = from.match(/<([^>]+)>/)?.[1] ?? from;
+  const fromDomain = fromAddress.toLowerCase().split("@")[1];
+  if (!isEmail(to) || !isEmail(fromAddress) || fromDomain !== "consultation.samish.com.np") {
     return json({ error: "The consultation form is not configured correctly. Please try again later." }, 503);
   }
 
@@ -114,27 +159,33 @@ export async function POST(request: Request) {
   ].join("\n");
 
   try {
-    const providerResponse = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        "Idempotency-Key": idempotencyKey,
-      },
-      body: JSON.stringify({
-        from,
-        to: [to],
-        reply_to: input.businessEmail.trim(),
-        subject,
-        text,
-      }),
-      signal: AbortSignal.timeout(12_000),
-      cache: "no-store",
+    const ownerNotified = await sendResendEmail(apiKey, {
+      from,
+      to,
+      replyTo: input.businessEmail.trim(),
+      subject,
+      text,
+      idempotencyKey: `${idempotencyKey}:owner`,
     });
+    if (!ownerNotified) return json({ error: "We couldn’t send your request just now. Please try again shortly." }, 502);
 
-    if (!providerResponse.ok) return json({ error: "We couldn’t send your request just now. Please try again shortly." }, 502);
-    const providerResult = (await providerResponse.json()) as { id?: string };
-    if (!providerResult.id) return json({ error: "We couldn’t confirm delivery of your request. Please try again shortly." }, 502);
+    const buyerConfirmed = await sendResendEmail(apiKey, {
+      from,
+      to: input.businessEmail.trim(),
+      subject: "We received your consultation request",
+      text: [
+        `Hi ${input.fullName.trim()},`,
+        "",
+        "Thanks for requesting a Samish Digital Wave consultation. We’ve received your details and will follow up using your preferred contact method.",
+        "",
+        "Your submitted marketing challenge:",
+        input.challenge.trim(),
+        "",
+        "Samish Digital Wave",
+      ].join("\n"),
+      idempotencyKey: `${idempotencyKey}:buyer`,
+    });
+    if (!buyerConfirmed) return json({ error: "Your request was received, but we couldn’t send the confirmation email. Please try again shortly." }, 502);
 
     const receipt = createSubmissionReceipt();
     if (!receipt) return json({ error: "We couldn’t confirm the request. Please try again shortly." }, 503);
