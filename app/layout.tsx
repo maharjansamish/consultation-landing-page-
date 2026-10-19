@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { siteConfig } from "@/lib/site-config";
+import { FloatingWhatsApp } from "@/components/WhatsAppContact";
 
 const socialImage = { url: "/images/samish-logo-horizontal-dark.png", width: 1920, height: 640, alt: "Samish Digital Wave — AI-Powered Digital Marketing" };
 const metadataBase = (() => {
@@ -41,7 +42,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body id="top">{children}</body>
+      <body id="top">
+        {children}
+        <FloatingWhatsApp />
+      </body>
     </html>
   );
 }

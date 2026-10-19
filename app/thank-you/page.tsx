@@ -16,7 +16,7 @@ export default async function ThankYouPage({ searchParams }: ThankYouPageProps) 
   const { receipt } = await searchParams;
   const accepted = isValidSubmissionReceipt(receipt);
   const videoUrl = getVimeoEmbedUrl();
-  const whatsappUrl = getWhatsAppUrl("Hi, I just submitted a consultation request and would like to discuss the next steps.");
+  const whatsappUrl = getWhatsAppUrl();
 
   return (
     <>

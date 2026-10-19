@@ -29,8 +29,8 @@ These variables control visible links and must not contain secrets:
 
 - `NEXT_PUBLIC_SITE_URL`: the production site origin. When set to a valid HTTPS URL, it also enables the brand image in social-sharing metadata.
 - `NEXT_PUBLIC_CONTACT_EMAIL`: displays a direct email link beside the form.
-- `NEXT_PUBLIC_WHATSAPP_NUMBER`: international digits with country code (8 to 15 digits); enables the WhatsApp button on the accepted thank-you page.
-- `NEXT_PUBLIC_VIMEO_URL`: a Vimeo video URL; enables the responsive video on the accepted thank-you page.
+- `NEXT_PUBLIC_WHATSAPP_NUMBER`: public contact number in international format; defaults to `+9779843831005` and powers the hero, video-section, thank-you, and floating WhatsApp links.
+- `NEXT_PUBLIC_VIMEO_URL`: optional Vimeo video URL; enables the accessible video player on the landing page and the accepted thank-you page. Leave it empty to show the branded placeholder; add your video URL here when it is ready.
 - `NEXT_PUBLIC_SCHEDULING_URL`: reserved for a real scheduling link; no scheduling link is shown until one is implemented and supplied.
 
 The optional public settings are read from `lib/site-config.ts`. The original logo files are copied unchanged to `public/images/` and are used by the page and favicon.

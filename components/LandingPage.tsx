@@ -1,8 +1,9 @@
 import { ConsultationForm } from "@/components/ConsultationForm";
-import { Icon } from "@/components/Icons";
+import { Icon, WhatsAppIcon } from "@/components/Icons";
 import { LogoHeader } from "@/components/LogoHeader";
 import { MarketingVisual } from "@/components/MarketingVisual";
-import { siteConfig } from "@/lib/site-config";
+import { VideoSection } from "@/components/VideoSection";
+import { getVimeoEmbedUrl, getWhatsAppUrl, siteConfig } from "@/lib/site-config";
 
 const processSteps = [
   { number: "01", title: "Share Your Goals", description: "Tell me about your business, target audience, and current marketing challenges.", icon: "chat" as const },
@@ -18,6 +19,9 @@ const serviceItems = [
 ];
 
 export function LandingPage() {
+  const whatsappUrl = getWhatsAppUrl();
+  const videoUrl = getVimeoEmbedUrl();
+
   return (
     <>
       <LogoHeader />
@@ -29,6 +33,7 @@ export function LandingPage() {
             <p className="hero-description">I help businesses explore smarter digital marketing opportunities with AI-powered strategies, engaging content, and practical growth systems.</p>
             <div className="hero-actions">
               <a className="button" href="#consultation">Book a Free Consultation <span aria-hidden="true">↗</span></a>
+              {whatsappUrl && <a className="button button-whatsapp hero-whatsapp" href={whatsappUrl} target="_blank" rel="noopener noreferrer"><WhatsAppIcon /> Chat on WhatsApp <span aria-hidden="true">↗</span></a>}
               <a className="text-link" href="#process">See How It Works <span aria-hidden="true">↓</span></a>
             </div>
             <ul className="hero-points" aria-label="Consultation highlights">
@@ -100,6 +105,8 @@ export function LandingPage() {
             </div>
           </div>
         </section>
+
+        <VideoSection embedUrl={videoUrl} whatsappUrl={whatsappUrl} />
 
         <section className="consultation-section section-pad" id="consultation">
           <div className="shell consultation-layout">

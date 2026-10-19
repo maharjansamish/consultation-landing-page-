@@ -3,7 +3,7 @@ export const siteConfig = {
   tagline: "AI-Powered Digital Marketing",
   siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? "",
   contactEmail: process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? "",
-  whatsappNumber: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "",
+  whatsappNumber: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER?.trim() || "9779843831005",
   vimeoUrl: process.env.NEXT_PUBLIC_VIMEO_URL ?? "",
   schedulingUrl: process.env.NEXT_PUBLIC_SCHEDULING_URL ?? "",
 } as const;
@@ -17,7 +17,7 @@ export const serviceOptions = [
 
 export const contactMethods = ["Email", "WhatsApp"] as const;
 
-export function getWhatsAppUrl(message = "Hi, I would like to discuss a consultation.") {
+export function getWhatsAppUrl(message = "Hello Samish Digital Wave, I would like to know more about your digital marketing services.") {
   const rawNumber = siteConfig.whatsappNumber.trim();
   if (!/^\+?[\d\s().-]{8,24}$/.test(rawNumber)) return "";
   const number = rawNumber.replace(/\D/g, "");
